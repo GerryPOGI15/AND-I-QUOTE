@@ -206,7 +206,7 @@
           </table>
         </div>
       </div>
-  
+
       <!-- Create/Edit Customer Modal -->
       <div v-if="(showCreateModal || showEditModal) && !loading" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -256,17 +256,17 @@
                         v-model="form.email"
                         id="email"
                         type="email"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         :class="{ 'border-red-300': errors.email }"
-                        @blur="checkEmailUniqueness"
+                        @blur="validateEmail"
                         :disabled="loading"
                     />
                     <p v-if="errors.email" class="mt-2 text-sm text-red-600">
-                        {{ errors.email[0] === 'The email has already been taken.' 
-                        ? 'This email address is already registered.' 
-                        : errors.email[0] }}
+                        {{ errors.email }}
                     </p>
                 </div>
+
                 
                 <div>
                   <label for="contact_info" class="block text-sm font-medium text-gray-700">Phone Number</label>
@@ -444,50 +444,55 @@ export default {
 
     async createCustomer() {
         this.errors = {};
+
+        if (!this.validateEmail()) return;
+
+        if (!this.validateDob()) return;
+
         this.loading = true;
         try {
             const response = await axios.post('/api/customers', this.form);
             this.customers.push(response.data);
             this.successMessage = 'Customer created successfully!';
             setTimeout(() => this.successMessage = '', 3000);
-            this.closeModal(); // Close AFTER success
+            this.closeModal();
         } catch (error) {
             if (error.response && error.response.status === 422) {
-            this.errors = error.response.data.errors || {};
-            // Keep modal open so the user can fix the errors
+                this.errors = error.response.data.errors || {};
             } else {
-            console.error('Error creating customer:', error);
-            this.errorMessage = 'Failed to create customer. Please try again.';
-            setTimeout(() => this.errorMessage = '', 5000);
+                console.error('Error creating customer:', error);
+                this.errorMessage = 'Failed to create customer. Please try again.';
+                setTimeout(() => this.errorMessage = '', 5000);
             }
         } finally {
             this.loading = false;
         }
     },
 
-        async updateCustomer() {
+    async updateCustomer() {
         this.errors = {};
+
+        if (!this.validateEmail()) return;
+
+        if (!this.validateDob()) return;
+
         this.loading = true;
         try {
-            const response = await axios.put(
-            `/api/customers/${this.selectedCustomer.id}`,
-            this.form
-            );
+            const response = await axios.put(`/api/customers/${this.selectedCustomer.id}`, this.form);
             const index = this.customers.findIndex(c => c.id === this.selectedCustomer.id);
             if (index !== -1) {
-            this.customers.splice(index, 1, response.data);
+                this.customers.splice(index, 1, response.data);
             }
             this.successMessage = 'Customer updated successfully!';
             setTimeout(() => this.successMessage = '', 3000);
-            this.closeModal(); // Close AFTER success
+            this.closeModal();
         } catch (error) {
             if (error.response && error.response.status === 422) {
-            this.errors = error.response.data.errors || {};
-            // Keep modal open for corrections
+                this.errors = error.response.data.errors || {};
             } else {
-            console.error('Error updating customer:', error);
-            this.errorMessage = 'Failed to update customer. Please try again.';
-            setTimeout(() => this.errorMessage = '', 5000);
+                console.error('Error updating customer:', error);
+                this.errorMessage = 'Failed to update customer. Please try again.';
+                setTimeout(() => this.errorMessage = '', 5000);
             }
         } finally {
             this.loading = false;
@@ -545,6 +550,51 @@ export default {
       this.selectedCustomer = null;
       this.errors = {};
     },
+    validateDob() {
+        this.errors.dob = '';
+
+        if (!this.form.dob) {
+            this.errors.dob = ['Date of birth is required.'];
+            return false;
+        }
+
+        const dob = new Date(this.form.dob);
+        const today = new Date();
+
+        if (dob > today) {
+            this.errors.dob = ['Date of birth cannot be in the future.'];
+            return false;
+        }
+
+        // Optional: Minimum age check (e.g., 18 years old)
+        const minAge = 18;
+        const ageDiff = today.getFullYear() - dob.getFullYear();
+        const ageCheck = ageDiff - (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0);
+
+        if (ageCheck < minAge) {
+            this.errors.dob = [`You must be at least ${minAge} years old.`];
+            return false;
+        }
+
+        return true;
+    },
+    validateEmail() {
+        this.errors.email = '';
+
+        if (!this.form.email) {
+            this.errors.email = 'Email is required.';
+            return false;
+        }
+
+        const gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+        if (!gmailPattern.test(this.form.email)) {
+            this.errors.email = 'Only @gmail.com addresses are allowed.';
+            return false;
+        }
+
+        return true;
+    },
+
   }
 }
 </script>

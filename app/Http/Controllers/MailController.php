@@ -15,7 +15,7 @@ class MailController extends Controller
         $quotation = Quotation::with(['customer', 'items'])->findOrFail($quotationId);
         $customer = $quotation->customer;
 
-        $apikey = "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";
+        $apikey = env('BREVO_API_KEY');
 
         // Generate PDF
         $pdf = Pdf::loadHTML($this->generateQuotationEmailHtml($quotation, $customer));

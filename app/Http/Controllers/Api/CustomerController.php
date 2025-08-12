@@ -33,7 +33,7 @@ class CustomerController extends Controller
             // Check if the error is specifically for the email uniqueness
             if (array_key_exists('email', $e->errors())) {
                 return response()->json([
-                    'message' => 'The given email address is already in use.',
+                    'message' => 'The email has already been taken.',
                     'errors' => $e->errors()
                 ], 422);
             }
