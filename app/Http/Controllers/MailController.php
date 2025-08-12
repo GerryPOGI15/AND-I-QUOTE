@@ -29,7 +29,7 @@ class MailController extends Controller
         ])->post('https://api.brevo.com/v3/smtp/email', [
             'sender' => [
                 'name' => 'AND I QUOTE',
-                'email' => 'santiagogerry1525@gmail.com',
+                'email' => env('BREVO_SENDER_EMAIL'),
             ],
             'to' => [
                 ['email' => $customer->email]
